@@ -1,13 +1,6 @@
 "use strict"
 
-enum NetPBMFormat {
-    P1 = "P1",
-    P2 = "P2",
-    P3 = "P3",
-    P4 = "P4",
-    P5 = "P5",
-    P6 = "P6"
-};
+enum NetPBMFormat { P1, P2, P3, P4, P5, P6 };
 
 type Size = {
     x : number,
@@ -18,7 +11,7 @@ class PPMCanvas {
     private cnv : HTMLCanvasElement|null;
     private ctx : CanvasRenderingContext2D|null;
     
-    constructor( id:string, imagedata : string ){
+    constructor( id:string, imagedata:string ){
         this.cnv = document.querySelector(id);
         this.ctx = this.cnv?.getContext("2d");
         const format = PPMCanvas.detect_format( imagedata );
@@ -26,7 +19,6 @@ class PPMCanvas {
             // TODO
         }
         else {
-            console.log("init")
             const numbers = PPMCanvas.process_ascii(imagedata);
             const image_size = {x : numbers[0], y : numbers[1]};
             const depth = numbers[2];
@@ -66,16 +58,19 @@ class PPMCanvas {
                 newImageData.data[4*pnum+3] = 0xff;
             }
         }
+        this.cnv.width = image_size.x
+        this.cnv.height = image_size.y
         this.ctx.putImageData(newImageData, 0, 0)
     }
     private static detect_format( imagedata : string ) : NetPBMFormat {
-        let MAGIC = imagedata.slice(0,2)
-        if ( "P1,P2,P3".split(",").includes(MAGIC) ){
-            return {
-                "P1" : NetPBMFormat.P1,
-                "P2" : NetPBMFormat.P2,
-                "P3" : NetPBMFormat.P3
-            }[MAGIC];
+        const magic = imagedata.slice(0,2)
+        const MAGICS = {
+            "P1" : NetPBMFormat.P1,
+            "P2" : NetPBMFormat.P2,
+            "P3" : NetPBMFormat.P3
+        };
+        if ( magic in MAGICS ){
+            return MAGICS[magic];
         }
     }
 
