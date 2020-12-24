@@ -1,0 +1,11 @@
+{
+  "name": "ppmcanvas",
+  "version": "0.0.1",
+  "description": "Netpbm renderer for HTML5",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mateusz Adamowski",
+  "license": "MIT"
+}

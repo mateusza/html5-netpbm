@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Example 1</title>
+<script src="../dist/index.js"></script>
+<style>
+    canvas { outline: 1px solid black; }
+</style>
+</head>
+<body>
+<div>
+    <canvas id="canv"></canvas>
+</div>
+<div>
+    <textarea id="ppm" rows=12 cols=80></textarea>
+</div>
+<div>
+    <button id="render-btn">Render</button>
+</div>
+<script>
+window.onload = () => {
+    document
+        .querySelector("#render-btn")
+        .addEventListener("click", () => {
+            new PPMCanvas(
+                "#canv",
+                document
+                    .querySelector("#ppm")
+                    .value
+            );
+        });
+}
+</script>
+</body>
+</html>
