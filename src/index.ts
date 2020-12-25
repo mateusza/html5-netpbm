@@ -1,79 +1,177 @@
-"use strict"
+'use strict';
 
-enum NetPBMFormat { P1, P2, P3, P4, P5, P6 };
+enum NetPBMFormat {P1, P2, P3, P4, P5, P6};
 
 type Size = {
-    x : number,
-    y : number
+    x: number,
+    y: number
 };
 
-class PPMCanvas {
-    private cnv : HTMLCanvasElement|null;
-    private ctx : CanvasRenderingContext2D|null;
-    
-    constructor( id:string, imagedata:string ){
-        this.cnv = document.querySelector(id);
-        this.ctx = this.cnv?.getContext("2d");
-        const format = PPMCanvas.detect_format( imagedata );
-        if ( format === NetPBMFormat.P1 ){
-            // TODO
-        }
-        else {
-            const numbers = PPMCanvas.process_ascii(imagedata);
-            const image_size = {x : numbers[0], y : numbers[1]};
-            const depth = numbers[2];
-            this.render(format, image_size, depth, numbers.slice(3));
-        }
+class NetPBM {
+    static parse(ppmascii: string): NetPBMImage {
+        return new NetPBMImage(ppmascii);
     }
 
-    private static process_ascii(ascii:string):number[] {
-        return ascii.split("\n")
-            .slice(1)
-            .map( line => line.replace(/#.*/, ""))
-            .join(" ")
-            .split(" ")
-            .filter( x => x.length > 0 )
-            .map( x => parseInt(x) )
+    static img(ppmascii: string): HTMLImageElement {
+        return this.parse(ppmascii).toHTMLImage();
     }
-    private render(
-        format:NetPBMFormat,
-        image_size : Size,
-        depth : number,
-        numbers : number[]
-    ) : void {
-        let newImageData = this.ctx.createImageData(image_size.x, image_size.y);
-        for ( let y = 0; y < image_size.y; y++ ){
-            for ( let x = 0; x < image_size.x; x++ ){
-                let pnum = y*image_size.x + x
-                if ( format === NetPBMFormat.P2 ){
-                    newImageData.data[4*pnum+0] = numbers[pnum]/depth*0xff;
-                    newImageData.data[4*pnum+1] = numbers[pnum]/depth*0xff;
-                    newImageData.data[4*pnum+2] = numbers[pnum]/depth*0xff;
-                }
-                if ( format === NetPBMFormat.P3 ){
-                    newImageData.data[4*pnum+0] = numbers[3*pnum+0]/depth*0xff;
-                    newImageData.data[4*pnum+1] = numbers[3*pnum+1]/depth*0xff;
-                    newImageData.data[4*pnum+2] = numbers[3*pnum+2]/depth*0xff;
-                }
-                newImageData.data[4*pnum+3] = 0xff;
-            }
+
+    static processAllImages(): void {
+        document
+            .querySelectorAll("img[netpbm-src]")
+            .forEach(img => {
+                fetch(img.getAttribute("netpbm-src"))
+                    .then(resp => resp.text())
+                    .then(text => NetPBM.parse(text).updateImage(img as HTMLImageElement))
+            });
+    }
+    static processAllScriptsAndPre(): void {
+        document
+            .querySelectorAll("script[type='image/x-portable-bitmap'], pre[netpbm]")
+            .forEach(x => {
+                let img = NetPBM.parse(x.textContent.trim()).toHTMLImage()
+                x.parentElement.replaceChild(img, x);
+                // preserve original element's id= and class= by copying it into <img>
+                img.id = x.id;
+                x.classList.forEach(klass => img.classList.add(klass));
+            });
+    }
+
+    static processAll(): void {
+        this.processAllImages();
+        this.processAllScriptsAndPre();
+    }
+}
+
+class NetPBMImage {
+    private imageData: ImageData;
+
+    constructor(ppmascii: string){
+        const format = NetPBMImage.detect_format(ppmascii);
+        let depth: number;
+        let numbers: number[];
+        let image_size: Size;
+        let hdrsize: number;
+        switch(format){
+            case NetPBMFormat.P1:
+                numbers = NetPBMImage.process_ascii_P1(ppmascii);
+                image_size = {x: numbers[0], y: numbers[1]};
+                hdrsize = 2;
+                break;
+            case NetPBMFormat.P2:
+            case NetPBMFormat.P3:
+                numbers = NetPBMImage.process_ascii(ppmascii);
+                image_size = {x: numbers[0], y: numbers[1]};
+                depth = numbers[2];
+                hdrsize = 3;
+                break;
         }
-        this.cnv.width = image_size.x
-        this.cnv.height = image_size.y
-        this.ctx.putImageData(newImageData, 0, 0)
+        this.imageData = this.render(format, image_size, depth, numbers.slice(hdrsize));
     }
-    private static detect_format( imagedata : string ) : NetPBMFormat {
-        const magic = imagedata.slice(0,2)
+
+    private static get_tokens_from_ascii(ascii: string): string[] {
+        return ascii
+            .slice(2)                               // skip magic header ("P1","P2",etc)
+            .split("\n")                            // split into lines
+            .map( line => line.replace(/#.*/, ""))  // remove comments until the end of line
+            .join(" ")                              // make one long line
+            .split(" ")                             // split into tokens
+            .filter(x => x.length > 0)              // skip empty tokens
+    }
+
+    private static process_ascii(ascii: string): number[] {
+        return this
+            .get_tokens_from_ascii(ascii)
+            .map(x => parseInt(x));
+    }
+
+    private static process_ascii_P1(ascii: string): number[] {
+        // P1 uses only 0 and 1 in image data, no whitespaces are required
+        const tokens: string[] = this.get_tokens_from_ascii(ascii);
+        const dimensions: number[] = tokens
+            .slice(0, 2)
+            .map(x=>parseInt(x));
+        const numbers: number[] = tokens
+            .slice(2)                       // skip size
+            .join("")                       // join all tokens
+            .split("")                      // split characters
+            .map(x=>parseInt(x));
+        return [... dimensions, ...numbers];
+    }
+
+    private static detect_format(imagedata: string): NetPBMFormat {
+        const magic = imagedata.slice(0,2);
         const MAGICS = {
-            "P1" : NetPBMFormat.P1,
-            "P2" : NetPBMFormat.P2,
-            "P3" : NetPBMFormat.P3
+            "P1": NetPBMFormat.P1,
+            "P2": NetPBMFormat.P2,
+            "P3": NetPBMFormat.P3
         };
         if ( magic in MAGICS ){
             return MAGICS[magic];
         }
+        else {
+            throw Error(`Unsupported NetPBM format: ${magic}`);
+        }
+    }
+
+    public render(
+        format: NetPBMFormat,
+        image_size: Size,
+        depth: number,
+        numbers: number[]
+    ): ImageData
+    {    
+        let newImageData = new ImageData(image_size.x, image_size.y);
+        for (let y = 0; y < image_size.y; y++){
+            for (let x = 0; x < image_size.x; x++){
+                let pnum = y*image_size.x + x; // pixel number (offset)
+                let numbersPerPixel:number = ({
+                    [NetPBMFormat.P1]: 1,
+                    [NetPBMFormat.P2]: 1,
+                    [NetPBMFormat.P3]: 3
+                })[format];
+                switch( format ){
+                    case NetPBMFormat.P1:
+                        for (let i=0; i<3; i++){
+                            newImageData.data[4*pnum+i] = 0xff - numbers[numbersPerPixel*pnum] * 0xff;
+                        }
+                        break;
+                    case NetPBMFormat.P2:
+                    case NetPBMFormat.P3:
+                        for (let i=0; i<3; i++){
+                            newImageData.data[4*pnum+i] = numbers[numbersPerPixel*pnum + i%numbersPerPixel]/depth * 0xff;
+                        }
+                        break;
+                }
+                newImageData.data[4*pnum+3] = 0xff; // alpha channel -> no transparency
+            }
+        }
+        return newImageData;
+    }
+    public toDataURL(format?: string): string {
+        const cnv = document.createElement("canvas");
+        cnv.width = this.imageData.width;
+        cnv.height = this.imageData.height;
+        this.putOnCanvas(cnv, 0, 0);
+        return cnv.toDataURL(format);
+    }
+
+    public toHTMLImage(format?: string): HTMLImageElement {
+        const img = document.createElement("img");
+        this.updateImage(img, format);
+        return img;
+    }
+
+    public putOnCanvas(canvas: HTMLCanvasElement, x:number, y: number): void {
+        canvas.getContext("2d").putImageData(this.imageData, x, y);
+    }
+
+    public updateImage(img: HTMLImageElement, format?: string): void {
+        img.src = this.toDataURL(format);
     }
 
 }
 
-
+window.addEventListener("load", function(): void {
+    NetPBM.processAll();
+} );
