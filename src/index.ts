@@ -135,11 +135,11 @@ class NetPBMImage {
         numbers: number[]
     ): ImageData
     {    
-        let newImageData = new ImageData(image_size.x, image_size.y);
+        const newImageData = new ImageData(image_size.x, image_size.y);
         for (let y = 0; y < image_size.y; y++){
             for (let x = 0; x < image_size.x; x++){
-                let pnum = y*image_size.x + x; // pixel number (offset)
-                let numbersPerPixel:number = ({
+                const pnum = y*image_size.x + x; // pixel number (offset)
+                const numbersPerPixel:number = ({
                     [NetPBMFormat.P1]: 1,
                     [NetPBMFormat.P2]: 1,
                     [NetPBMFormat.P3]: 3
@@ -180,7 +180,7 @@ class NetPBMImage {
         return cnv;
     }
 
-    public putOnCanvas(canvas: HTMLCanvasElement, x:number, y: number): void {
+    public putOnCanvas(canvas: HTMLCanvasElement, x: number, y: number): void {
         canvas.getContext("2d").putImageData(this.imageData, x, y);
     }
 
