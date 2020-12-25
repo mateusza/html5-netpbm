@@ -8,12 +8,16 @@ type Size = {
 };
 
 class NetPBM {
-    static parse(ppmascii: string): NetPBMImage {
-        return new NetPBMImage(ppmascii);
+    static parse(ascii: string): NetPBMImage {
+        return new NetPBMImage(ascii);
     }
 
-    static img(ppmascii: string): HTMLImageElement {
-        return this.parse(ppmascii).toHTMLImage();
+    static img(ascii: string): HTMLImageElement {
+        return this.parse(ascii).toHTMLImage();
+    }
+
+    static canvas(ascii: string): HTMLCanvasElement {
+        return this.parse(ascii).toHTMLCanvas();
     }
 
     static processAllImages(): void {
@@ -26,10 +30,20 @@ class NetPBM {
             });
     }
     static processAllScriptsAndPre(): void {
+        const mimetypes: string[] = [
+            'image/x-portable-bitmap',
+            'image/x-portable-graymap',
+            'image/x-portable-pixmap'
+        ];
         document
-            .querySelectorAll("script[type='image/x-portable-bitmap'], pre[netpbm]")
+            .querySelectorAll(
+                [
+                    ...mimetypes.map(m=>`script[type='${m}']`),
+                    'pre[netpbm]'
+                ].join(", ")
+            )
             .forEach(x => {
-                let img = NetPBM.parse(x.textContent.trim()).toHTMLImage()
+                const img: HTMLImageElement = NetPBM.parse(x.textContent.trim()).toHTMLImage()
                 x.parentElement.replaceChild(img, x);
                 // preserve original element's id= and class= by copying it into <img>
                 img.id = x.id;
@@ -149,17 +163,21 @@ class NetPBMImage {
         return newImageData;
     }
     public toDataURL(format?: string): string {
-        const cnv = document.createElement("canvas");
-        cnv.width = this.imageData.width;
-        cnv.height = this.imageData.height;
-        this.putOnCanvas(cnv, 0, 0);
-        return cnv.toDataURL(format);
+        return this.toHTMLCanvas().toDataURL(format);
     }
 
     public toHTMLImage(format?: string): HTMLImageElement {
         const img = document.createElement("img");
         this.updateImage(img, format);
         return img;
+    }
+
+    public toHTMLCanvas(): HTMLCanvasElement {
+        const cnv = document.createElement("canvas");
+        cnv.width = this.imageData.width;
+        cnv.height = this.imageData.height;
+        this.putOnCanvas(cnv, 0, 0);
+        return cnv;
     }
 
     public putOnCanvas(canvas: HTMLCanvasElement, x:number, y: number): void {
