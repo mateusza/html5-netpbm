@@ -93,21 +93,21 @@ class NetPBM {
 class NetPBMImage {
     private imageData: ImageData;
 
-    constructor(ppmascii: string){
-        const format = NetPBMImage.detect_format(ppmascii);
+    constructor(ascii: string){
+        const format = NetPBMImage.detect_format(ascii);
         let depth: number;
         let numbers: number[];
         let image_size: Size;
         let hdrsize: number;
         switch(format){
             case NetPBMFormat.P1:
-                numbers = NetPBMImage.process_ascii_P1(ppmascii);
+                numbers = NetPBMImage.process_ascii_P1(ascii);
                 image_size = {x: numbers[0], y: numbers[1]};
                 hdrsize = 2;
                 break;
             case NetPBMFormat.P2:
             case NetPBMFormat.P3:
-                numbers = NetPBMImage.process_ascii(ppmascii);
+                numbers = NetPBMImage.process_ascii(ascii);
                 image_size = {x: numbers[0], y: numbers[1]};
                 depth = numbers[2];
                 hdrsize = 3;
