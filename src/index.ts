@@ -44,14 +44,15 @@ class NetPBM {
         this.processAllScriptsAndPre();
     }
 
-    static replaceElementWithRenderedImg(elemid:string|HTMLElement): void {
-        let elem : HTMLElement;
+    static maybeQuerySelector(elemid:string|HTMLElement): HTMLElement {
         if (elemid instanceof HTMLElement){
-            elem = elemid;
+            return elemid;
         }
-        if (typeof elemid === typeof "" ){
-            elem = document.querySelector(elemid as string);
-        }
+        return document.querySelector(elemid as string);
+    }
+
+    static replaceElementWithRenderedImg(elemid:string|HTMLElement): void {
+        const elem: HTMLElement = this.maybeQuerySelector(elemid);
         const img: HTMLImageElement = NetPBM.img(elem.textContent.trim());
         elem.parentElement.replaceChild(img, elem);
         // preserve original element's id= and class= by copying it into <img>
@@ -60,37 +61,19 @@ class NetPBM {
     }
 
     static fetchImgNetPBMSrc(elemid:string|HTMLImageElement): void {
-        let elem : HTMLImageElement;
-        if (elemid instanceof HTMLImageElement){
-            elem = elemid;
-        }
-        if (typeof elemid === typeof "" ){
-            elem = document.querySelector(elemid as string);
-        }
+        const elem: HTMLElement = this.maybeQuerySelector(elemid);
         fetch(elem.getAttribute("netpbm-src"))
             .then(resp => resp.text())
             .then(NetPBM.willUpdateImg(elem as HTMLImageElement));
     }
 
     static updateImg(ascii:string, elemid:string|HTMLImageElement): void {
-        let elem : HTMLImageElement;
-        if (elemid instanceof HTMLImageElement){
-            elem = elemid;
-        }
-        if (typeof elemid === typeof "" ){
-            elem = document.querySelector(elemid as string);
-        }
-        elem.src=(new NetPBMImage(ascii)).toDataURL()
+        const elem: HTMLImageElement = this.maybeQuerySelector(elemid) as HTMLImageElement;
+        elem.src = NetPBM.parse(ascii).toDataURL();
     }
 
     static createAndAppendImgTo(ascii:string, elemid:string|HTMLElement): void {
-        let elem : HTMLElement;
-        if (elemid instanceof HTMLElement){
-            elem = elemid;
-        }
-        if (typeof elemid === typeof "" ){
-            elem = document.querySelector(elemid as string);
-        }
+        const elem: HTMLElement = this.maybeQuerySelector(elemid);
         elem.append(NetPBM.img(ascii));
     }
 
