@@ -154,7 +154,7 @@ class NetPBMImage {
             "P2": NetPBMFormat.P2,
             "P3": NetPBMFormat.P3
         };
-        if ( magic in MAGICS ){
+        if (magic in MAGICS){
             return MAGICS[magic];
         }
         else {
@@ -178,7 +178,7 @@ class NetPBMImage {
                     [NetPBMFormat.P2]: 1,
                     [NetPBMFormat.P3]: 3
                 })[format];
-                switch( format ){
+                switch(format){
                     case NetPBMFormat.P1:
                         for (let i: number = 0; i<3; i++){
                             newImageData.data[4*pnum+i] = 0xff - numbers[numbersPerPixel*pnum] * 0xff;
