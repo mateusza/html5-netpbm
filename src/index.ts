@@ -23,39 +23,53 @@ class NetPBM {
     }
 
     static processAllImages(): void {
-        document
-            .querySelectorAll("img[netpbm-src]")
-            .forEach(img => {
-                fetch(img.getAttribute("netpbm-src"))
-                    .then(resp => resp.text())
-                    .then(text => NetPBM.parse(text).updateImage(img as HTMLImageElement))
-            });
+        document.querySelectorAll("img[netpbm-src]")
+            .forEach(img => this.fetchImgNetPBMSrc(img as HTMLImageElement));
     }
+
     static processAllScriptsAndPre(): void {
         const mimetypes: string[] = [
             'image/x-portable-bitmap',
             'image/x-portable-graymap',
             'image/x-portable-pixmap'
         ];
-        document
-            .querySelectorAll(
-                [
-                    ...mimetypes.map(m=>`script[type='${m}']`),
-                    'pre[netpbm]'
-                ].join(", ")
-            )
-            .forEach(x => {
-                const img: HTMLImageElement = NetPBM.parse(x.textContent.trim()).toHTMLImage()
-                x.parentElement.replaceChild(img, x);
-                // preserve original element's id= and class= by copying it into <img>
-                img.id = x.id;
-                x.classList.forEach(klass => img.classList.add(klass));
-            });
+        const allScriptsQueryStrings: string[] = mimetypes.map(m=>`script[type='${m}']`);
+        const queryStr: string = [...allScriptsQueryStrings, 'pre[netpbm]'].join(", ");
+        document.querySelectorAll(queryStr)
+            .forEach(x => this.replaceElementWithRenderedImg(x as HTMLElement));
     }
 
     static processAll(): void {
         this.processAllImages();
         this.processAllScriptsAndPre();
+    }
+
+    static replaceElementWithRenderedImg(elemid:string|HTMLElement): void {
+        let elem : HTMLElement;
+        if (elemid instanceof HTMLElement){
+            elem = elemid;
+        }
+        if (typeof elemid === typeof "" ){
+            elem = document.querySelector(elemid as string);
+        }
+        const img: HTMLImageElement = NetPBM.img(elem.textContent.trim());
+        elem.parentElement.replaceChild(img, elem);
+        // preserve original element's id= and class= by copying it into <img>
+        img.id = elem.id;
+        elem.classList.forEach(klass => img.classList.add(klass));
+    }
+
+    static fetchImgNetPBMSrc(elemid:string|HTMLImageElement): void {
+        let elem : HTMLImageElement;
+        if (elemid instanceof HTMLImageElement){
+            elem = elemid;
+        }
+        if (typeof elemid === typeof "" ){
+            elem = document.querySelector(elemid as string);
+        }
+        fetch(elem.getAttribute("netpbm-src"))
+            .then(resp => resp.text())
+            .then(NetPBM.willUpdateImg(elem as HTMLImageElement));
     }
 
     static updateImg(ascii:string, elemid:string|HTMLImageElement): void {
@@ -91,7 +105,6 @@ class NetPBM {
             this.updateImg(text, elemid);
         };
     }
-
 }
 
 class NetPBMImage {
@@ -151,8 +164,9 @@ class NetPBMImage {
     }
 
     private static detect_format(imagedata: string): NetPBMFormat {
-        const magic = imagedata.slice(0,2);
-        const MAGICS = {
+        const magicSize: number = 2;
+        const magic: string = imagedata.slice(0, magicSize);
+        const MAGICS: object = {
             "P1": NetPBMFormat.P1,
             "P2": NetPBMFormat.P2,
             "P3": NetPBMFormat.P3
@@ -172,24 +186,24 @@ class NetPBMImage {
         numbers: number[]
     ): ImageData
     {    
-        const newImageData = new ImageData(image_size.x, image_size.y);
-        for (let y = 0; y < image_size.y; y++){
-            for (let x = 0; x < image_size.x; x++){
-                const pnum = y*image_size.x + x; // pixel number (offset)
-                const numbersPerPixel:number = ({
+        const newImageData: ImageData = new ImageData(image_size.x, image_size.y);
+        for (let y: number = 0; y < image_size.y; y++){
+            for (let x: number = 0; x < image_size.x; x++){
+                const pnum: number = y*image_size.x + x; // pixel number (offset)
+                const numbersPerPixel: number = ({
                     [NetPBMFormat.P1]: 1,
                     [NetPBMFormat.P2]: 1,
                     [NetPBMFormat.P3]: 3
                 })[format];
                 switch( format ){
                     case NetPBMFormat.P1:
-                        for (let i=0; i<3; i++){
+                        for (let i: number = 0; i<3; i++){
                             newImageData.data[4*pnum+i] = 0xff - numbers[numbersPerPixel*pnum] * 0xff;
                         }
                         break;
                     case NetPBMFormat.P2:
                     case NetPBMFormat.P3:
-                        for (let i=0; i<3; i++){
+                        for (let i: number = 0; i<3; i++){
                             newImageData.data[4*pnum+i] = numbers[numbersPerPixel*pnum + i%numbersPerPixel]/depth * 0xff;
                         }
                         break;
@@ -204,13 +218,13 @@ class NetPBMImage {
     }
 
     public toHTMLImage(format?: string): HTMLImageElement {
-        const img = document.createElement("img");
+        const img: HTMLImageElement = document.createElement("img") as HTMLImageElement;
         this.updateImage(img, format);
         return img;
     }
 
     public toHTMLCanvas(): HTMLCanvasElement {
-        const cnv = document.createElement("canvas");
+        const cnv: HTMLCanvasElement = document.createElement("canvas") as HTMLCanvasElement;
         cnv.width = this.imageData.width;
         cnv.height = this.imageData.height;
         this.putOnCanvas(cnv, 0, 0);
