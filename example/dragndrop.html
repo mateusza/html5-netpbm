@@ -1,0 +1,88 @@
+<!doctype html>
+<meta charset="UTF-8">
+<script src="../dist/index.js"></script>
+<style>
+    @keyframes drag {
+        from {
+            background-color: #fff;
+        }
+        to {
+            background-color: #0077cc;
+        }
+    }
+
+    .box {
+        outline: 2px dotted #0055aa;
+        padding: 10vw;
+        width: 70%;
+        margin: auto;
+    }
+    .is-dragover {
+        animation-name: drag;
+        animation-duration: 1s;
+        animation-direction: alternate;
+        animation-iteration-count: infinite;
+    }
+    .box__uploading,
+    .box__success,
+    .box__error,
+    .box__file {
+        display: none;
+    }
+
+    img { border: 1px solid black; }
+</style>
+
+<form class="box" id='dragndropform'>
+    <div class="box__input">
+      <input class="box__file" type="file" name="files[]" id="file" multiple>
+      <label for="file"><strong>Choose a file</strong><span class="box__dragndrop"> or drag it here</span>.</label>
+      <button class="box__button" type="submit">Render</button>
+    </div>
+    <div class="box__uploading">Render...</div>
+    <div class="box__success">Done!</div>
+    <div class="box__error">Error! <span></span>.</div>
+</form>
+
+<div id="results">
+</div>
+
+<script>
+
+    let droppedFiles = false;
+
+    let dndform = document.querySelector("#dragndropform");
+
+    for (const ev of 'drag dragstart dragend dragover dragenter dragleave drop'.split(" ")){
+        dndform.addEventListener(ev, function(e){
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    }
+    for (const ev of 'dragover dragenter'.split(" ")){
+        dndform.addEventListener(ev, function(e){
+            document.querySelector("#dragndropform").classList.add('is-dragover')
+        })
+    }
+    for (const ev of 'dragleave dragend drop'.split(" ")){
+        dndform.addEventListener(ev, function(e){
+            document.querySelector("#dragndropform").classList.remove('is-dragover')
+        })
+    }
+    dndform.addEventListener("drop", function(e){
+        console.log(e.dataTransfer.items)
+        
+        for (const it of e.dataTransfer.items){
+            if (it.kind == "string" && it.type == "text/plain"){
+                it.getAsString(NetPBM.willAppendImgTo("#results"))
+            }
+        }
+
+        for (const f of e.dataTransfer.files){
+            f.text().then(NetPBM.willAppendImgTo("#results"))
+        }
+//        droppedFiles = e.originalEvent.dataTransfer.files;
+        //console.log("Files:", droppedFiles)
+    })
+    
+</script>

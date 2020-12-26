@@ -171,9 +171,7 @@ window.addEventListener( "load", () => {
     document
         .querySelector("#render-btn")
         .addEventListener("click", () => {
-            document.querySelector("#result").append(
-                NetPBM.img(document.querySelector("#ppm").value)
-            )
+            NetPBM.willAppendImgTo("#result")(document.querySelector("#ppm").value)
         });
 } );
 
