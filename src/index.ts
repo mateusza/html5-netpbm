@@ -7,6 +7,8 @@ type Size = {
     y: number
 };
 
+type TextCallback = ((arg0: string) => void);
+
 class NetPBM {
     static parse(ascii: string): NetPBMImage {
         return new NetPBMImage(ascii);
@@ -55,6 +57,41 @@ class NetPBM {
         this.processAllImages();
         this.processAllScriptsAndPre();
     }
+
+    static updateImg(ascii:string, elemid:string|HTMLImageElement): void {
+        let elem : HTMLImageElement;
+        if (elemid instanceof HTMLImageElement){
+            elem = elemid;
+        }
+        if (typeof elemid === typeof "" ){
+            elem = document.querySelector(elemid as string);
+        }
+        elem.src=(new NetPBMImage(ascii)).toDataURL()
+    }
+
+    static createAndAppendImgTo(ascii:string, elemid:string|HTMLElement): void {
+        let elem : HTMLElement;
+        if (elemid instanceof HTMLElement){
+            elem = elemid;
+        }
+        if (typeof elemid === typeof "" ){
+            elem = document.querySelector(elemid as string);
+        }
+        elem.append(NetPBM.img(ascii));
+    }
+
+    static willAppendImgTo(elemid:string|HTMLElement): TextCallback {
+        return (text:string): void => {
+            this.createAndAppendImgTo(text, elemid);
+        };
+    }
+
+    static willUpdateImg(elemid:string|HTMLImageElement): TextCallback {
+        return (text:string): void => {
+            this.updateImg(text, elemid);
+        };
+    }
+
 }
 
 class NetPBMImage {
