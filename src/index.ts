@@ -60,31 +60,31 @@ class NetPBM {
         elem.classList.forEach(klass => img.classList.add(klass));
     }
 
-    static fetchImgNetPBMSrc(elemid:string|HTMLImageElement): void {
+    static fetchImgNetPBMSrc(elemid: string|HTMLImageElement): void {
         const elem: HTMLElement = this.maybeQuerySelector(elemid);
         fetch(elem.getAttribute("netpbm-src"))
             .then(resp => resp.text())
             .then(NetPBM.willUpdateImg(elem as HTMLImageElement));
     }
 
-    static updateImg(ascii:string, elemid:string|HTMLImageElement): void {
+    static updateImg(ascii: string, elemid: string|HTMLImageElement): void {
         const elem: HTMLImageElement = this.maybeQuerySelector(elemid) as HTMLImageElement;
         elem.src = NetPBM.parse(ascii).toDataURL();
     }
 
-    static createAndAppendImgTo(ascii:string, elemid:string|HTMLElement): void {
+    static createAndAppendImgTo(ascii: string, elemid: string|HTMLElement): void {
         const elem: HTMLElement = this.maybeQuerySelector(elemid);
         elem.append(NetPBM.img(ascii));
     }
 
-    static willAppendImgTo(elemid:string|HTMLElement): TextCallback {
-        return (text:string): void => {
+    static willAppendImgTo(elemid: string|HTMLElement): TextCallback {
+        return (text: string): void => {
             this.createAndAppendImgTo(text, elemid);
         };
     }
 
-    static willUpdateImg(elemid:string|HTMLImageElement): TextCallback {
-        return (text:string): void => {
+    static willUpdateImg(elemid: string|HTMLImageElement): TextCallback {
+        return (text: string): void => {
             this.updateImg(text, elemid);
         };
     }
